@@ -10,6 +10,10 @@ import Spinner from '@/components/ui/Spinner'
 import Badge from '@/components/ui/Badge'
 import Skeleton, { SkeletonText } from '@/components/ui/Skeleton'
 
+// Avoid static prerender so useSearchParams works without a Suspense boundary during build
+export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
+
 export default function AdminDashboard() {
   const router = useRouter()
   const searchParams = useSearchParams()
