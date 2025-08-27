@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react'
 import { apiFetch } from '@/lib/clientAuth'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
@@ -14,7 +15,7 @@ import Skeleton, { SkeletonText } from '@/components/ui/Skeleton'
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
 
-export default function AdminDashboard() {
+function AdminDashboardInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [tickets, setTickets] = useState([])
@@ -209,5 +210,13 @@ export default function AdminDashboard() {
         ))}
       </div>
     </div>
+  )
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="text-gray-600">Loading...</div>}>
+      <AdminDashboardInner />
+    </Suspense>
   )
 }
