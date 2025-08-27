@@ -56,7 +56,7 @@ export default function TechAssignments() {
           <Link key={t._id} href={`/tickets/${t._id}`} className="block bg-white border rounded-xl p-4 hover:shadow-sm transition-shadow">
             <div className="min-w-0">
               <p className="font-semibold truncate">{t.title}</p>
-              <p className="text-sm text-gray-600 truncate">{t.building || ''} {t.room || ''}</p>
+              <p className="text-sm text-gray-600 truncate">{t.department ? `Dept: ${t.department}` : ''} {t.room || ''}</p>
               <div className="mt-2 flex items-center gap-2 flex-wrap">
                 <Badge className={statusBadgeClass(t.status)}>{t.status.replace('_',' ')}</Badge>
                 <Badge className={priorityBadgeClass(t.priority)}>priority: {t.priority}</Badge>

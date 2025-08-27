@@ -9,11 +9,12 @@ import Select from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
 
-const categories = ['AC','Computer','Electrical','Plumbing','Other']
+const categories = ['AC','Computer','Electrical','Plumbing','Network','Software','Hardware','Furniture','Cleaning','Carpentry','Painting','Security','Printer','Internet','Laboratory','Classroom AV','Other']
+const departments = ['DIC','CSE','Civil','Mechanical','AI','AIML','MBA','Electrical','Eloctronics','ETC']
 
 export default function NewTicketPage() {
   const router = useRouter()
-  const [form, setForm] = useState({ title:'', description:'', category:'Electrical', room:'', building:'' })
+  const [form, setForm] = useState({ title:'', description:'', category:'Electrical', room:'', department:'DIC' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -43,7 +44,7 @@ export default function NewTicketPage() {
         </div>
         <div>
           <label className="block text-sm text-gray-600 mb-1">Description</label>
-          <Textarea name="description" rows={4} value={form.description} onChange={onChange} placeholder="Describe the issue, location, and urgency" required />
+          <Textarea name="description" rows={4} value={form.description} onChange={onChange} placeholder="desribe the problem." required />
         </div>
         <div className="grid sm:grid-cols-3 gap-3">
           <div>
@@ -54,11 +55,13 @@ export default function NewTicketPage() {
           </div>
           <div>
             <label className="block text-sm text-gray-600 mb-1">Room</label>
-            <Input name="room" value={form.room} onChange={onChange} placeholder="e.g. 302" />
+            <Input name="room" value={form.room} onChange={onChange} placeholder=" e.g. D-02, E-05" />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Building</label>
-            <Input name="building" value={form.building} onChange={onChange} placeholder="e.g. Main Block" />
+            <label className="block text-sm text-gray-600 mb-1">Department</label>
+            <Select name="department" value={form.department} onChange={onChange}>
+              {departments.map(d=> <option key={d} value={d}>{d}</option>)}
+            </Select>
           </div>
         </div>
         {error && <p className="text-red-600 text-sm">{error}</p>}

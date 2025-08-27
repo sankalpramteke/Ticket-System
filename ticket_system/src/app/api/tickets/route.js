@@ -43,14 +43,17 @@ export async function POST(req) {
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
-  const { title, description, category, room, building } = body || {};
+  const { title, description, category, room, department } = body || {};
   if (!title || !description || !category) return NextResponse.json({ message: 'Missing fields' }, { status: 400 });
+
+  const allowedDepartments = ['DIC','CSE','Civil','Mechanical','AI','AIML','MBA','Electrical','Eloctronics','ETC'];
+  const dept = allowedDepartments.includes(department) ? department : undefined;
 
   // Only admins can set priority during creation; everyone else defaults to 'medium'.
   const allowedPriorities = ['low','medium','high'];
   const priority = (user.role === 'admin' && allowedPriorities.includes(body?.priority)) ? body.priority : 'medium';
 
-  const ticket = await Ticket.create({ title, description, category, priority, room, building, reporterId: user.id });
+  const ticket = await Ticket.create({ title, description, category, priority, room, department: dept, reporterId: user.id });
   await Activity.create({ ticketId: ticket._id, actorId: user.id, type: 'create' });
   return NextResponse.json({ ticket }, { status: 201 });
 }
