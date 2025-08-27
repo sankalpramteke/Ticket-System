@@ -40,17 +40,29 @@ export async function PATCH(req, { params }) {
 
   const body = await req.json();
   const updates = {};
+  const requestedStatus = body.status;
 
   if (user.role === 'admin') {
     if (body.priority) updates.priority = body.priority;
     if (typeof body.assigneeId !== 'undefined') updates.assigneeId = body.assigneeId || null;
-    if (body.status) updates.status = body.status; // admin can also change status
+    if (requestedStatus) {
+      // Admin can close only after technician has resolved the ticket
+      if (requestedStatus === 'closed' && ticket.status !== 'resolved') {
+        return NextResponse.json({ message: 'Ticket can be closed by admin only after it is resolved.' }, { status: 400 });
+      }
+      updates.status = requestedStatus;
+    }
   }
 
   const toId2 = (v) => v && typeof v === 'object' ? String(v._id || v.id) : (v != null ? String(v) : '')
   const assignedTo = toId2(ticket.assigneeId)
   if (user.role === 'technician' && assignedTo && assignedTo === String(user.id)) {
-    if (body.status) updates.status = body.status;
+    if (requestedStatus) {
+      if (requestedStatus === 'closed') {
+        return NextResponse.json({ message: 'Technicians cannot close tickets.' }, { status: 403 });
+      }
+      updates.status = requestedStatus;
+    }
   }
 
   // Reporters are read-only; no changes allowed.
@@ -66,6 +78,11 @@ export async function PATCH(req, { params }) {
 
   const activityType = body.status ? 'update_status' : body.priority ? 'update_priority' : 'assign';
   await Activity.create({ ticketId: ticket._id, actorId: user.id, type: activityType, payload: updates });
+  // Also log a visible comment when admin closes the ticket
+  if (user.role === 'admin' && requestedStatus === 'closed') {
+    await Activity.create({ ticketId: ticket._id, actorId: user.id, type: 'comment', payload: { message: 'Admin closed the ticket', system: true } });
+    try { getEventBus().emit('tickets:update', { id: ticket._id.toString(), fields: { status: 'closed' } }) } catch {}
+  }
 
   // Emit SSE event to notify clients a ticket has changed
   try { getEventBus().emit('tickets:update', { id: ticket._id.toString(), fields: updates }) } catch {}

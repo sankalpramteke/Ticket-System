@@ -156,6 +156,14 @@ export default function TicketDetailPage() {
     }
   }
 
+  async function closeTicket() {
+    try {
+      await update({ status: 'closed' })
+    } catch (e) {
+      setError(e.message || 'Failed to close ticket')
+    }
+  }
+
   function getTicketAssigneeId() {
     return typeof ticket.assigneeId === 'object' && ticket.assigneeId
       ? (ticket.assigneeId._id || ticket.assigneeId.id)
@@ -300,7 +308,15 @@ export default function TicketDetailPage() {
                 {comments.map(c => (
                   <div key={c._id} className="rounded-md p-3 border border-neutral-200 dark:border-neutral-700">
                     <div className="text-sm text-gray-700 flex items-center justify-between dark:text-neutral-200">
-                      <span className="font-medium">{c.actor?.name || 'User'}</span>
+                      <span className="font-medium flex items-center gap-2">
+                        <span>
+                          {c.actor?.name || 'User'}
+                          {c.actor?.role ? ` (${c.actor.role})` : ''}
+                        </span>
+                        {c.system && (
+                          <Badge className="bg-white text-black border-neutral-300 dark:bg-white dark:text-black dark:border-neutral-300">System</Badge>
+                        )}
+                      </span>
                       <span>{new Date(c.createdAt).toLocaleString()}</span>
                     </div>
                     <p className="mt-1 whitespace-pre-wrap break-words">{c.message}</p>
@@ -346,8 +362,19 @@ export default function TicketDetailPage() {
               <div className="space-y-2">
                 <h2 className="font-medium">Status</h2>
                 <Select disabled={!canUpdateStatus} value={status} onChange={e=>setStatus(e.target.value)}>
-                  {statuses.map(s=> <option key={s} value={s}>{s}</option>)}
+                  {statuses.map(s => {
+                    const disableClosedForTech = me?.role === 'technician' && s === 'closed'
+                    const disableClosedForAdmin = me?.role === 'admin' && s === 'closed' && status !== 'resolved'
+                    const disabled = disableClosedForTech || disableClosedForAdmin
+                    return <option key={s} value={s} disabled={disabled}>{s}</option>
+                  })}
                 </Select>
+                {(me?.role === 'technician') && (
+                  <p className="text-xs text-gray-500 mt-1">Technicians cannot close tickets.</p>
+                )}
+                {(me?.role === 'admin' && status !== 'resolved') && (
+                  <p className="text-xs text-gray-500 mt-1">Admin can close only after the ticket is resolved.</p>
+                )}
               </div>
 
               {isAdmin && (
@@ -379,8 +406,13 @@ export default function TicketDetailPage() {
               </div>
             )}
 
-            <div className="flex justify-end">
-              <Button disabled={!hasChanges} onClick={handleSave}>Update Changes</Button>
+            <div className="flex justify-between items-center gap-3">
+              {isAdmin && status === 'resolved' && (
+                <Button onClick={closeTicket}>Close Ticket</Button>
+              )}
+              <div className="ml-auto">
+                <Button disabled={!hasChanges} onClick={handleSave}>Update Changes</Button>
+              </div>
             </div>
           </div>
         )}

@@ -1,6 +1,5 @@
-import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
-const AdminPageClient = dynamic(() => import('./AdminPageClient'), { ssr: false })
+import AdminPageClient from './AdminPageClient'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'

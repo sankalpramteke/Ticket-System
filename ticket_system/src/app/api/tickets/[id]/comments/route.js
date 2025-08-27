@@ -31,13 +31,14 @@ export async function GET(req, { params }) {
 
   // attach actor name
   const actorIds = [...new Set(comments.map(c => String(c.actorId)))]
-  const actors = await User.find({ _id: { $in: actorIds } }, { name: 1, email: 1 }).lean()
+  const actors = await User.find({ _id: { $in: actorIds } }, { name: 1, email: 1, role: 1 }).lean()
   const actorMap = Object.fromEntries(actors.map(a => [String(a._id), a]))
   const withActors = comments.map(c => ({
     _id: c._id,
     message: c.payload?.message || '',
     createdAt: c.createdAt,
-    actor: actorMap[String(c.actorId)] || { name: 'User', email: '' },
+    system: !!(c.payload && c.payload.system),
+    actor: actorMap[String(c.actorId)] || { name: 'User', email: '', role: 'reporter' },
   }))
 
   return NextResponse.json({ comments: withActors })
