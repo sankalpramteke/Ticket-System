@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { apiFetch } from '@/lib/clientAuth'
 import Button from '@/components/ui/Button'
@@ -19,7 +19,6 @@ function priorityBadgeClass(p) {
 
 export default function AdminPageClient() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -40,10 +39,10 @@ export default function AdminPageClient() {
 
   useEffect(() => { load() }, [])
 
-  // Initialize filters from URL on first render
+  // Initialize filters from URL on first render (client-only)
   useEffect(() => {
     if (initialized) return
-    const qp = new URLSearchParams(searchParams?.toString() || '')
+    const qp = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams()
     const nextQ = qp.get('q') || ''
     const nextStatus = qp.get('status') || 'all'
     const nextPriority = qp.get('priority') || 'all'
@@ -53,7 +52,7 @@ export default function AdminPageClient() {
     setPriorityFilter(nextPriority)
     setAssignFilter(nextAssign)
     setInitialized(true)
-  }, [searchParams, initialized])
+  }, [initialized])
 
   // Update URL when filters change
   useEffect(() => {
