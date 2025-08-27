@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff; /* pure white */
+  --foreground: #111111; /* near black */
+}
+
+/* Dark mode: toggle by adding .dark on html element */
+.dark {
+  --background: #000000; /* pure black */
+  --foreground: #ffffff; /* pure white */
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  color-scheme: light;
+}
+
+.dark body { 
+  color-scheme: dark; 
+}
