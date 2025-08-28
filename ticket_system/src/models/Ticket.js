@@ -9,7 +9,7 @@ const TicketSchema = new Schema({
   reporterId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   assigneeId: { type: Schema.Types.ObjectId, ref: 'User', default: null, index: true },
   room: { type: String },
-  department: { type: String, enum: ['DIC','CSE','Civil','Mechanical','AI','AIML','MBA','Electrical','Eloctronics','ETC'], index: true }
+  department: { type: String, enum: ['DIC','CSE','Civil','Mechanical','AI','AIML','MBA','Electrical','Electronics','ETC'], index: true }
 }, { timestamps: true });
 
 TicketSchema.index({ status: 1, priority: 1, category: 1, createdAt: -1 });

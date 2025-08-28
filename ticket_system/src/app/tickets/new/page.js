@@ -39,22 +39,22 @@ export default function NewTicketPage() {
       <h1 className="text-2xl font-semibold mb-4">Create Ticket</h1>
       <form onSubmit={handleSubmit} className="space-y-4 bg-white border rounded-xl p-4 sm:p-6">
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Title</label>
+          <label className="block text-sm text-gray-600 mb-1">Category</label>
+          <Select name="category" value={form.category} onChange={onChange}>
+            {categories.map(c=> <option key={c} value={c}>{c}</option>)}
+          </Select>
+        </div>
+        <div>
+          <label className="block text-sm text-gray-600 mb-1">Problem</label>
           <Input name="title" value={form.title} onChange={onChange} placeholder="What is the issue?" required />
         </div>
         <div>
           <label className="block text-sm text-gray-600 mb-1">Description</label>
           <Textarea name="description" rows={4} value={form.description} onChange={onChange} placeholder="desribe the problem." required />
         </div>
-        <div className="grid sm:grid-cols-3 gap-3">
+        <div className="grid sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Category</label>
-            <Select name="category" value={form.category} onChange={onChange}>
-              {categories.map(c=> <option key={c} value={c}>{c}</option>)}
-            </Select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Room</label>
+            <label className="block text-sm text-gray-600 mb-1">Room/Lab</label>
             <Input name="room" value={form.room} onChange={onChange} placeholder=" e.g. D-02, E-05" />
           </div>
           <div>
