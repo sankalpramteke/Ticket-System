@@ -135,11 +135,56 @@ Emails are sent using `src/lib/mail.js`. In dev, if SMTP vars are missing, email
 
 ---
 
-## 📨 Email Magic
-- Utility: `src/lib/mail.js` (Nodemailer).
-  - `POST /api/tickets` → on create
-  - `PATCH /api/tickets/[id]` → on assign/status/priority change
-- Recipients: reporter + all admins. Includes details + a ticket link built from `APP_BASE_URL`.
+## 📨 Email Notification System
+
+### Features
+✅ **Comprehensive HTML Email Templates** - Beautiful, responsive emails with inline CSS
+✅ **Smart Notifications** - Context-aware notifications for all ticket activities
+✅ **User Preferences** - Users can control which notifications they receive
+✅ **Notification Tracking** - All emails logged in database for audit and debugging
+✅ **Assignment Notifications** - Assignees get special notifications when tickets assigned to them
+
+### Notification Types
+1. **Ticket Created** - Sent to reporter + admins
+2. **Ticket Updated** - Sent to reporter + assignee + admins (status/priority changes)
+3. **Ticket Assigned** - Special notification to the assignee
+4. **Comment Added** - Sent to reporter + assignee + admins (excludes commenter)
+5. **Profile Updated** - Sent to user when admin updates their profile
+
+### Architecture
+- **Email Service**: `src/lib/mail.js` (Nodemailer with Gmail/SMTP)
+- **Templates**: `src/lib/emailTemplates.js` (HTML templates for each notification type)
+- **Notification Service**: `src/services/notificationService.js` (Central notification logic)
+- **Tracking Model**: `src/models/Notification.js` (Logs all sent emails)
+- **User Preferences**: `src/models/User.js` → `notificationPreferences` field
+
+### User Management
+- **Preferences Page**: `/profile/notifications` - Users can toggle notification types
+- **Admin Dashboard**: `/admin/notifications` - View notification history and stats
+- **API Endpoints**: 
+  - `GET/PATCH /api/users/preferences` - Manage preferences
+  - `GET /api/admin/notifications` - View notification logs (admin only)
+
+### How It Works
+1. User action triggers event (create ticket, add comment, etc.)
+2. Notification service checks user preferences
+3. HTML email generated from template
+4. Email sent via SMTP (if enabled)
+5. Result logged to Notification collection
+6. Users notified except those who triggered the action
+
+### Configuration
+All SMTP settings in `.env.local`:
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM="Campus Ticket System <your-email@gmail.com>"
+APP_BASE_URL=http://localhost:3000
+```
+
+**Test your setup**: Run `node test-email.js` from `ticket_system/` directory
 
 ---
 

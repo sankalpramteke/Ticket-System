@@ -5,6 +5,7 @@ import Activity from '@/models/Activity'
 import Ticket from '@/models/Ticket'
 import User from '@/models/User'
 import { getEventBus } from '@/lib/events'
+import { notifyCommentAdded } from '@/services/notificationService'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -59,6 +60,14 @@ export async function POST(req, { params }) {
 
   const activity = await Activity.create({ ticketId: id, actorId: user.id, type: 'comment', payload: { message } })
   try { getEventBus().emit('tickets:update', { id }) } catch {}
+
+  // Send email notifications (best-effort)
+  try {
+    const commenter = await User.findById(user.id).select('_id name email').lean()
+    await notifyCommentAdded(ticket, { message }, commenter)
+  } catch (e) {
+    console.warn('[mail] comment notification failed:', e?.message)
+  }
 
   return NextResponse.json({ ok: true, id: activity._id })
 }

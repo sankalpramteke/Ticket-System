@@ -5,7 +5,7 @@ import Activity from '@/models/Activity';
 import { getUserFromRequest } from '@/lib/jwt';
 import { getEventBus } from '@/lib/events';
 import User from '@/models/User';
-import { sendMail } from '@/lib/mail';
+import { notifyTicketUpdated, notifyTicketAssigned } from '@/services/notificationService';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -43,6 +43,7 @@ export async function PATCH(req, { params }) {
   const body = await req.json();
   const updates = {};
   const requestedStatus = body.status;
+  const oldAssigneeId = ticket.assigneeId ? String(ticket.assigneeId) : null;
 
   if (user.role === 'admin') {
     if (body.priority) updates.priority = body.priority;
@@ -89,39 +90,28 @@ export async function PATCH(req, { params }) {
   // Emit SSE event to notify clients a ticket has changed
   try { getEventBus().emit('tickets:update', { id: ticket._id.toString(), fields: updates }) } catch {}
 
-  // Email notifications (best-effort): notify reporter and admins
+  // Email notifications (best-effort)
   try {
-    const [reporter, admins] = await Promise.all([
-      User.findById(updated.reporterId?._id || updated.reporterId).select('name email').lean(),
-      User.find({ role: 'admin' }).select('name email').lean(),
-    ])
-    const adminEmails = (admins || []).map(a => a.email).filter(Boolean)
-    const ticketUrl = `${process.env.APP_BASE_URL || ''}/tickets/${updated._id}`
-    const changes = []
-    if (typeof updates.status !== 'undefined') changes.push(`Status: ${ticket.status} -> ${updates.status}`)
-    if (typeof updates.priority !== 'undefined') changes.push(`Priority: ${ticket.priority} -> ${updates.priority}`)
+    const actor = await User.findById(user.id).select('_id name email').lean();
+    const changes = [];
+    if (typeof updates.status !== 'undefined') changes.push(`Status: ${ticket.status} → ${updates.status}`);
+    if (typeof updates.priority !== 'undefined') changes.push(`Priority: ${ticket.priority} → ${updates.priority}`);
     if (Object.prototype.hasOwnProperty.call(updates, 'assigneeId')) {
-      const prev = ticket.assigneeId ? 'assigned' : 'unassigned'
-      const next = updates.assigneeId ? 'assigned' : 'unassigned'
-      changes.push(`Assignment: ${prev} -> ${next}`)
+      const prev = ticket.assigneeId ? 'assigned' : 'unassigned';
+      const next = updates.assigneeId ? 'assigned' : 'unassigned';
+      changes.push(`Assignment: ${prev} → ${next}`);
     }
-    const subject = `Ticket Updated #${updated._id.toString().slice(-6)}`
-    const details = `
-Ticket: ${updated._id}
-Issuer: ${updated.issuerName}
-Category: ${updated.category} / ${updated.subCategory}
-Department: ${updated.department}
-Room: ${updated.room}
-Status: ${updated.status}
-Priority: ${updated.priority}
-Changes: ${changes.join('; ')}
-Link: ${ticketUrl}
-`.trim()
-    if (reporter?.email) {
-      await sendMail({ to: reporter.email, subject, text: details })
-    }
-    if (adminEmails.length) {
-      await sendMail({ to: adminEmails.join(','), subject, text: details })
+    
+    // Send general update notification
+    await notifyTicketUpdated(updated, changes, actor);
+    
+    // If ticket was just assigned to someone new, send them a special notification
+    const newAssigneeId = updates.assigneeId ? String(updates.assigneeId) : null;
+    if (newAssigneeId && newAssigneeId !== oldAssigneeId) {
+      const assignee = await User.findById(newAssigneeId).select('_id name email').lean();
+      if (assignee) {
+        await notifyTicketAssigned(updated, assignee);
+      }
     }
   } catch (e) {
     console.warn('[mail] update ticket notification failed:', e?.message)

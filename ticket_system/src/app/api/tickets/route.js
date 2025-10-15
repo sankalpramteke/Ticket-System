@@ -4,7 +4,7 @@ import Ticket from '@/models/Ticket';
 import Activity from '@/models/Activity';
 import { getUserFromRequest } from '@/lib/jwt';
 import User from '@/models/User';
-import { sendMail } from '@/lib/mail';
+import { notifyTicketCreated } from '@/services/notificationService';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -64,30 +64,8 @@ export async function POST(req) {
 
   // Notify reporter and admins via email (best-effort)
   try {
-    const [reporter, admins] = await Promise.all([
-      User.findById(user.id).select('name email').lean(),
-      User.find({ role: 'admin' }).select('name email').lean(),
-    ])
-    const adminEmails = (admins || []).map(a => a.email).filter(Boolean)
-    const ticketUrl = `${process.env.APP_BASE_URL || ''}/tickets/${ticket._id}`
-    const subject = `Ticket Created #${ticket._id.toString().slice(-6)} | ${category} · ${subCategory}`
-    const details = `
-Issuer: ${issuerName}
-Category: ${category} / ${subCategory}
-Department: ${department}
-Room: ${room}
-Priority: ${priority}
-Status: new
-Description: ${description}
-Link: ${ticketUrl}
-`.trim()
-
-    if (reporter?.email) {
-      await sendMail({ to: reporter.email, subject, text: details })
-    }
-    if (adminEmails.length) {
-      await sendMail({ to: adminEmails.join(','), subject, text: `New ticket created\n\n${details}` })
-    }
+    const reporter = await User.findById(user.id).select('_id name email').lean();
+    await notifyTicketCreated(ticket, reporter);
   } catch (e) {
     console.warn('[mail] create ticket notification failed:', e?.message)
   }

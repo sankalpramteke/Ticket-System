@@ -3,6 +3,7 @@ import { connectToDB } from '@/lib/db'
 import { getUserFromRequest } from '@/lib/jwt'
 import User from '@/models/User'
 import { getEventBus } from '@/lib/events'
+import { notifyProfileUpdated } from '@/services/notificationService'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -42,6 +43,21 @@ export async function PATCH(req, { params }) {
   if (!updated) return NextResponse.json({ message: 'User not found' }, { status: 404 })
 
   try { getEventBus().emit('users:update', { id: updated._id.toString(), fields: updates }) } catch {}
+
+  // Send email notification to the user (best-effort)
+  try {
+    const admin = await User.findById(auth.id).select('name').lean()
+    const changes = []
+    if (updates.name) changes.push(`Name updated to: ${updates.name}`)
+    if (updates.email) changes.push(`Email updated to: ${updates.email}`)
+    if (updates.department) changes.push(`Department updated to: ${updates.department}`)
+    if (updates.role) changes.push(`Role updated to: ${updates.role}`)
+    if (changes.length > 0) {
+      await notifyProfileUpdated(updated, changes, admin)
+    }
+  } catch (e) {
+    console.warn('[mail] profile update notification failed:', e?.message)
+  }
 
   return NextResponse.json({ user: updated })
 }

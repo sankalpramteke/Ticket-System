@@ -6,7 +6,16 @@ const UserSchema = new Schema({
   passwordHash: { type: String, required: true },
   role: { type: String, enum: ['reporter','admin','technician'], default: 'reporter', index: true },
   department: { type: String },
-  lastLoginAt: { type: Date }
+  lastLoginAt: { type: Date },
+  notificationPreferences: {
+    emailEnabled: { type: Boolean, default: true },
+    ticketCreated: { type: Boolean, default: true },
+    ticketAssigned: { type: Boolean, default: true },
+    ticketStatusChanged: { type: Boolean, default: true },
+    ticketPriorityChanged: { type: Boolean, default: true },
+    newComment: { type: Boolean, default: true },
+    profileUpdated: { type: Boolean, default: true }
+  }
 }, { timestamps: true });
 
 UserSchema.index({ email: 1 }, { unique: true });
